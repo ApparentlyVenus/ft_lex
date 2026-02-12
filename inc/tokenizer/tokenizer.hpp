@@ -3,6 +3,7 @@
 
 # include <vector>
 # include <string>
+# include <stdexcept>
 
 typedef enum {
     TOK_PERCENT_PERCENT,
@@ -40,7 +41,7 @@ typedef struct Token {
     int line;
     int column;
 
-    Token(TokenType type, const std::string& value);
+    Token(TokenType type, const std::string& value, int line, int col);
 
 } Token;
 
@@ -54,10 +55,19 @@ class Tokenizer {
     std::vector<Token> tokens;
 
     char peek();
+    char peekNext();
     char advance();
+    bool isAtEnd();
 
-    void skipWhitespace();
+    Token   makeToken();
+    Token   lexString();
+    Token   lexCharClass();
+    Token   lexCCode();
+    Token   lexPercentDirective();
 
+    public:
+    Tokenizer(const std::string& input);
+    std::vector<Token> tokenize();
 };
 
 
