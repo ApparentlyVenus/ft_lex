@@ -22,12 +22,14 @@ typedef enum {
     TOK_RBRACE,
     TOK_CARET,
     TOK_DOLLAR,
+    TOK_DOT,
 
     TOK_LITERAL,
     TOK_STRING,
     TOK_CHARCLASS,
     TOK_NUMBER,
     TOK_C_CODE,
+    TOK_REPEAT,
 
     TOK_NEWLINE,
     TOK_WHITESPACE,
@@ -59,11 +61,20 @@ class Tokenizer {
     char advance();
     bool isAtEnd();
 
-    Token   makeToken();
-    Token   lexString();
-    Token   lexCharClass();
-    Token   lexCCode();
-    Token   lexPercentDirective();
+    void skipNewlines();
+    void skipWhitespace();
+
+    Token lexString();
+    Token lexCharClass();
+    Token lexCCode();
+    Token lexPercentDirective();
+    Token lexRepeatCount();
+
+    void tokenizeAction();
+    void tokenizePattern();
+    void tokenizeRules();
+    void tokenizeTop();
+    void tokenizeBottom();
 
     public:
     Tokenizer(const std::string& input);
