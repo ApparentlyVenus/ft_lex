@@ -140,6 +140,20 @@ Token Tokenizer::lexRepeatCount() {
     return Token(TOK_REPEAT, value, startLine, startCol);
 }
 
+Token Tokenizer::lexDefiniton() {
+    int startLine = line;
+    int startCol = column;
+    std::string value;
+
+    while(!isAtEnd() && !std::isspace(peek()))
+        value += advance();
+    skipWhitespace();
+    value += ' ';
+    while (!isAtEnd() && peek() != '\n');
+        value += advance();
+    return Token(TOK_DEFINITION, value, startLine, startCol);  
+}
+
 void Tokenizer::skipNewlines() {
     while (!isAtEnd() && std::isspace(peek())) {
         if (peek() == '\n') {
@@ -219,7 +233,7 @@ void Tokenizer::tokenizeRules() {
     }
 }
 
-void Tokenizer::tokenizeTop() {
+void Tokenizer::tokenizeHeader() {
     while (!isAtEnd()) {
         if (peek() == '%' && peekNext() == '%') {
             advance();
@@ -231,13 +245,26 @@ void Tokenizer::tokenizeTop() {
             advance();
             advance();
             tokens.push_back(Token(TOK_PERCENT_LBRACE, "%{", line, column));
-            // lex the C block
-
+            
+            std::string code;
+            while (!isAtEnd()) {
+                if (peek() == '%' && peekNext() == '}') {
+                    advance();
+                    advance();
+                    break;
+                }
+                code += advance();
+            }
+            tokens.push_back(Token(TOK_C_CODE, code, line, column));
+            tokens.push_back(Token(TOK_PERCENT_RBRACE, "%}", line, column));
+            continue; 
         }
+        tokens.push_back(lexDefiniton());
     }
+    throw std::runtime_error("unexcpected EOF: missing %%");
 }
 
-void Tokenizer::tokenizeBottom() {
+void Tokenizer::tokenizeCode() {
     int startline = line;
     int startColumn = column;
     std::string value;
@@ -249,5 +276,9 @@ void Tokenizer::tokenizeBottom() {
 }
 
 std::vector<Token> Tokenizer::tokenize() {
-
+    tokenizeHeader();
+    tokenizeRules();
+    tokenizeCode();
+    tokens.push_back(Token(TOK_EOF, "", line, column));
+    return tokens;
 }

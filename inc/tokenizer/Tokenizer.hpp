@@ -30,6 +30,7 @@ typedef enum {
     TOK_NUMBER,
     TOK_C_CODE,
     TOK_REPEAT,
+    TOK_DEFINITION,
 
     TOK_NEWLINE,
     TOK_WHITESPACE,
@@ -69,12 +70,13 @@ class Tokenizer {
     Token lexCCode();
     Token lexPercentDirective();
     Token lexRepeatCount();
+    Token lexDefiniton();
 
     void tokenizeAction();
     void tokenizePattern();
     void tokenizeRules();
-    void tokenizeTop();
-    void tokenizeBottom();
+    void tokenizeHeader();
+    void tokenizeCode();
 
     public:
     Tokenizer(const std::string& input);
