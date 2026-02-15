@@ -3,7 +3,8 @@
 Token::Token(TokenType t, const std::string& v, int line, int col)
     :   type(t), value(v), line(line), column(col) {}
 
-Tokenizer::Tokenizer(const std::string& input) : input(input) {}
+Tokenizer::Tokenizer(const std::string& input) 
+    : input(input), pos(0), line(1), column(1) {}
 
 char Tokenizer::peek() {
     if (isAtEnd()) return '\0';
@@ -117,7 +118,7 @@ Token Tokenizer::lexPercentDirective() {
     }
     if (peek() == '}') {
         advance();
-        return Token(TOK_PERCENT_RBRACE, "&}", startLine, startCol);
+        return Token(TOK_PERCENT_RBRACE, "%}", startLine, startCol);
     }
     throw std::runtime_error("unknown directive at line " + std::to_string(startLine));
 }
@@ -149,7 +150,7 @@ Token Tokenizer::lexDefiniton() {
         value += advance();
     skipWhitespace();
     value += ' ';
-    while (!isAtEnd() && peek() != '\n');
+    while (!isAtEnd() && peek() != '\n')
         value += advance();
     return Token(TOK_DEFINITION, value, startLine, startCol);  
 }
@@ -220,7 +221,7 @@ void Tokenizer::tokenizePattern() {
 }
 
 void Tokenizer::tokenizeRules() {
-    while (!isAtEnd) {
+    while (!isAtEnd()) {
         skipNewlines();
         if (peek() == '%' && peekNext() == '%') {
             advance();
