@@ -312,7 +312,7 @@ void Tokenizer::tokenizeCode() {
     while (!isAtEnd())
         value += advance();
     if (!value.empty())
-        tokens.push_back(Token(TOK_C_CODE, value, startline, _column));
+        tokens.push_back(Token(TOK_C_CODE, value, startline, startColumn));
 }
 
 std::vector<Token> Tokenizer::tokenize() {
@@ -323,8 +323,42 @@ std::vector<Token> Tokenizer::tokenize() {
     return tokens;
 }
 
+const char* tokenTypeToString(TokenType type) {
+    switch(type) {
+        case TOK_PERCENT_PERCENT: return "TOK_PERCENT_PERCENT";
+        case TOK_PERCENT_LBRACE: return "TOK_PERCENT_LBRACE";
+        case TOK_PERCENT_RBRACE: return "TOK_PERCENT_RBRACE";
+        case TOK_PIPE: return "TOK_PIPE";
+        case TOK_STAR: return "TOK_STAR";
+        case TOK_PLUS: return "TOK_PLUS";
+        case TOK_QUESTION: return "TOK_QUESTION";
+        case TOK_LPAREN: return "TOK_LPAREN";
+        case TOK_RPAREN: return "TOK_RPAREN";
+        case TOK_LBRACKET: return "TOK_LBRACKET";
+        case TOK_RBRACKET: return "TOK_RBRACKET";
+        case TOK_LBRACE: return "TOK_LBRACE";
+        case TOK_RBRACE: return "TOK_RBRACE";
+        case TOK_CARET: return "TOK_CARET";
+        case TOK_DOLLAR: return "TOK_DOLLAR";
+        case TOK_DOT: return "TOK_DOT";
+        case TOK_LITERAL: return "TOK_LITERAL";
+        case TOK_STRING: return "TOK_STRING";
+        case TOK_CHARCLASS: return "TOK_CHARCLASS";
+        case TOK_NUMBER: return "TOK_NUMBER";
+        case TOK_C_CODE: return "TOK_C_CODE";
+        case TOK_REPEAT: return "TOK_REPEAT";
+        case TOK_DEFINITION: return "TOK_DEFINITION";
+        case TOK_NEWLINE: return "TOK_NEWLINE";
+        case TOK_WHITESPACE: return "TOK_WHITESPACE";
+        case TOK_EOF: return "TOK_EOF";
+        case TOK_ERROR: return "TOK_ERROR";
+        default: return "UNKNOWN";
+    }
+}
+
+
 std::ostream& operator<<(std::ostream& os, const Token& token) {
-    os << "Token " << token.type << "at " << token.line << ":" << token.column << "val = " << token.value;
+    os << "Token " << tokenTypeToString(token.type) << " at " << token.line << ":" << token.column << " val = " << token.value;
     return os;
 }
 

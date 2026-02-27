@@ -1,31 +1,26 @@
 NAME = ft_lex
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -Iinc
+CXXFLAGS = -Wall -Wextra -Werror
 
-SRC_DIR = src
-OBJ_DIR = obj
-INC_DIR = inc
+SRC = src/main.cpp \
+      src/tokenizer/Tokenizer.cpp \
+      src/utils/Logger.cpp \
+      src/utils/FileUtils.cpp \
+      src/utils/StringUtils.cpp
 
-SRCS = src/tokenizer/Tokenizer.cpp \
-       src/tokenizer/Token.cpp \
-       src/utils/Logger.cpp \
-       src/utils/FileUtils.cpp \
-       src/utils/StringUtils.cpp \
-       src/main.cpp
-
-OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+OBJ = $(SRC:src/%.cpp=obj/%.o)
 
 all: $(NAME)
 
-$(NAME): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
+$(NAME): $(OBJ)
+	$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+obj/%.o: src/%.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -Iinc -c $< -o $@
 
 clean:
-	rm -rf $(OBJ_DIR)
+	rm -rf obj
 
 fclean: clean
 	rm -f $(NAME)
