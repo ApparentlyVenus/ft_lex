@@ -4,37 +4,37 @@ Token::Token(TokenType t, const std::string& v, int line, int col)
     :   type(t), value(v), line(line), column(col) {}
 
 Tokenizer::Tokenizer(const std::string& input) 
-    : input(input), pos(0), line(1), column(1) {}
+    : _input(input), _pos(0), _line(1), _column(1) {}
 
 char Tokenizer::peek() {
     if (isAtEnd()) return '\0';
-    return input[pos];
+    return _input[_pos];
 }
 
 char Tokenizer::peekNext() {
-    if (pos + 1 >= input.size()) return '\0';
-    return input[pos + 1];
+    if (_pos + 1 >= _input.size()) return '\0';
+    return _input[_pos + 1];
 }
 
 char Tokenizer::advance() {
-    char c = input[pos];
-    pos++;
+    char c = _input[_pos];
+    _pos++;
     if (c == '\n') {
-        line++;
-        column = 1;
+        _line++;
+        _column = 1;
     } else {
-        column++;
+        _column++;
     }
     return c;
 }
 
 bool Tokenizer::isAtEnd() {
-    return pos >= input.size();
+    return _pos >= _input.size();
 }
 
 Token Tokenizer::lexString() {
-    int startLine = line;
-    int startCol = column;
+    int startLine = _line;
+    int startCol = _column;
     std::string val;
 
     advance();
@@ -53,8 +53,8 @@ Token Tokenizer::lexString() {
 }
 
 Token Tokenizer::lexCharClass() {
-    int startLine = line;
-    int startCol = column;
+    int startLine = _line;
+    int startCol = _column;
     std::string val;
 
     advance();
@@ -78,8 +78,8 @@ Token Tokenizer::lexCharClass() {
 }
 
 Token Tokenizer::lexCCode() {
-    int startLine = line;
-    int startCol = column;
+    int startLine = _line;
+    int startCol = _column;
     std::string val;
 
     int braceDepth = 0;
@@ -104,8 +104,8 @@ Token Tokenizer::lexCCode() {
 }
 
 Token Tokenizer::lexPercentDirective() {
-    int startLine = line;
-    int startCol = column;
+    int startLine = _line;
+    int startCol = _column;
     
     advance();
     if (peek() == '%') {
@@ -123,27 +123,32 @@ Token Tokenizer::lexPercentDirective() {
     throw std::runtime_error("unknown directive at line " + std::to_string(startLine));
 }
 
-Token Tokenizer::lexRepeatCount() {
-    int startLine = line;
-    int startCol = column;
+Token Tokenizer::lexBrace() {
+    int startLine = _line;
+    int startCol = _column;
     std::string value;
 
     advance();
     while (!isAtEnd() && peek() != '}') {
-        char c = peek();
-        if (!std::isdigit(c) && c != ',')
-            throw std::runtime_error("invalid repeat at line " + std::to_string(startLine));
         value += advance();
     }
-    if (isAtEnd())
-        throw std::runtime_error("unterminated repeat count at " + std::to_string(startLine));
     advance();
-    return Token(TOK_REPEAT, value, startLine, startCol);
+
+    bool isRepeat = true;
+    for (int i = 0; i < value.length(); i++) {
+        if (!std::isdigit(value[0]) && value[0] != ',') {
+            isRepeat = false;
+            break;
+        }
+    }
+    if (isRepeat)
+        return Token(TOK_REPEAT, value, startLine, startCol);
+    return Token(TOK_DEFINITION, value, startLine, startCol);
 }
 
 Token Tokenizer::lexDefiniton() {
-    int startLine = line;
-    int startCol = column;
+    int startLine = _line;
+    int startCol = _column;
     std::string value;
 
     while(!isAtEnd() && !std::isspace(peek()))
@@ -158,19 +163,19 @@ Token Tokenizer::lexDefiniton() {
 void Tokenizer::skipNewlines() {
     while (!isAtEnd() && std::isspace(peek())) {
         if (peek() == '\n') {
-            line++;
-            column = 1;
+            _line++;
+            _column = 1;
         } else {
-            column++;
+            _column++;
         }
-        pos++;
+        _pos++;
     }
 }
 
 void Tokenizer::skipWhitespace() {
     while (!isAtEnd() && (peek() == ' ' || peek() == '\t')) {
-        column++;
-        pos++;
+        _column++;
+        _pos++;
     }
 }
 
@@ -179,13 +184,13 @@ void Tokenizer::tokenizeAction() {
 
     if (isAtEnd() || peek() == '\n') {
         advance();
-        tokens.push_back(Token(TOK_NEWLINE, "\n", line, column));
+        tokens.push_back(Token(TOK_NEWLINE, "\n", _line, _column));
         return;
     }
     tokens.push_back(lexCCode());
     if (peek() == '\n') {
         advance();
-        tokens.push_back(Token(TOK_NEWLINE, "\n", line, column));
+        tokens.push_back(Token(TOK_NEWLINE, "\n", _line, _column));
     }
 }
 
@@ -197,23 +202,23 @@ void Tokenizer::tokenizePattern() {
         switch(c) {
             case '"': tokens.push_back(lexString()); break;
             case '[': tokens.push_back(lexCharClass()); break;
-            case '{': tokens.push_back(lexRepeatCount()); break;
-            case '|': advance(); tokens.push_back(Token(TOK_PIPE,     "|", line, column)); break;
-            case '*': advance(); tokens.push_back(Token(TOK_STAR,     "*", line, column)); break;
-            case '+': advance(); tokens.push_back(Token(TOK_PLUS,     "+", line, column)); break;
-            case '?': advance(); tokens.push_back(Token(TOK_QUESTION, "?", line, column)); break;
-            case '(': advance(); tokens.push_back(Token(TOK_LPAREN,   "(", line, column)); break;
-            case ')': advance(); tokens.push_back(Token(TOK_RPAREN,   ")", line, column)); break;
-            case '.': advance(); tokens.push_back(Token(TOK_DOT,      ".", line, column)); break;
-            case '^': advance(); tokens.push_back(Token(TOK_CARET,    "^", line, column)); break;
-            case '$': advance(); tokens.push_back(Token(TOK_DOLLAR,   "$", line, column)); break;
+            case '{': tokens.push_back(lexBrace()); break;
+            case '|': advance(); tokens.push_back(Token(TOK_PIPE,     "|", _line, _column)); break;
+            case '*': advance(); tokens.push_back(Token(TOK_STAR,     "*", _line, _column)); break;
+            case '+': advance(); tokens.push_back(Token(TOK_PLUS,     "+", _line, _column)); break;
+            case '?': advance(); tokens.push_back(Token(TOK_QUESTION, "?", _line, _column)); break;
+            case '(': advance(); tokens.push_back(Token(TOK_LPAREN,   "(", _line, _column)); break;
+            case ')': advance(); tokens.push_back(Token(TOK_RPAREN,   ")", _line, _column)); break;
+            case '.': advance(); tokens.push_back(Token(TOK_DOT,      ".", _line, _column)); break;
+            case '^': advance(); tokens.push_back(Token(TOK_CARET,    "^", _line, _column)); break;
+            case '$': advance(); tokens.push_back(Token(TOK_DOLLAR,   "$", _line, _column)); break;
             case '\\':
                 advance();
-                tokens.push_back(Token(TOK_LITERAL, std::string(1, advance()), line, column));
+                tokens.push_back(Token(TOK_LITERAL, std::string(1, advance()), _line, _column));
                 break;
             default:
                 advance();
-                tokens.push_back(Token(TOK_LITERAL, std::string(1, c), line, column));
+                tokens.push_back(Token(TOK_LITERAL, std::string(1, c), _line, _column));
                 break;
 
         }
@@ -226,7 +231,7 @@ void Tokenizer::tokenizeRules() {
         if (peek() == '%' && peekNext() == '%') {
             advance();
             advance();
-            tokens.push_back(Token(TOK_PERCENT_PERCENT, "%%", line, column));
+            tokens.push_back(Token(TOK_PERCENT_PERCENT, "%%", _line, _column));
             return ;
         }
         tokenizePattern();
@@ -239,13 +244,13 @@ void Tokenizer::tokenizeHeader() {
         if (peek() == '%' && peekNext() == '%') {
             advance();
             advance();
-            tokens.push_back(Token(TOK_PERCENT_PERCENT, "%%", line, column));
+            tokens.push_back(Token(TOK_PERCENT_PERCENT, "%%", _line, _column));
             return ;
         }
         if (peek() == '%' && peekNext() == '{') {
             advance();
             advance();
-            tokens.push_back(Token(TOK_PERCENT_LBRACE, "%{", line, column));
+            tokens.push_back(Token(TOK_PERCENT_LBRACE, "%{", _line, _column));
             
             std::string code;
             while (!isAtEnd()) {
@@ -256,8 +261,8 @@ void Tokenizer::tokenizeHeader() {
                 }
                 code += advance();
             }
-            tokens.push_back(Token(TOK_C_CODE, code, line, column));
-            tokens.push_back(Token(TOK_PERCENT_RBRACE, "%}", line, column));
+            tokens.push_back(Token(TOK_C_CODE, code, _line, _column));
+            tokens.push_back(Token(TOK_PERCENT_RBRACE, "%}", _line, _column));
             continue; 
         }
         tokens.push_back(lexDefiniton());
@@ -266,20 +271,20 @@ void Tokenizer::tokenizeHeader() {
 }
 
 void Tokenizer::tokenizeCode() {
-    int startline = line;
-    int startColumn = column;
+    int startline = _line;
+    int startColumn = _column;
     std::string value;
 
     while (!isAtEnd())
         value += advance();
     if (!value.empty())
-        tokens.push_back(Token(TOK_C_CODE, value, startline, column));
+        tokens.push_back(Token(TOK_C_CODE, value, startline, _column));
 }
 
 std::vector<Token> Tokenizer::tokenize() {
     tokenizeHeader();
     tokenizeRules();
     tokenizeCode();
-    tokens.push_back(Token(TOK_EOF, "", line, column));
+    tokens.push_back(Token(TOK_EOF, "", _line, _column));
     return tokens;
 }

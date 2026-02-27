@@ -50,10 +50,10 @@ typedef struct Token {
 
 class Tokenizer {
     private:
-    std::string input;
-    size_t pos;
-    int line;
-    int column;
+    std::string _input;
+    size_t _pos;
+    int _line;
+    int _column;
 
     std::vector<Token> tokens;
 
@@ -69,7 +69,7 @@ class Tokenizer {
     Token lexCharClass();
     Token lexCCode();
     Token lexPercentDirective();
-    Token lexRepeatCount();
+    Token lexBrace();
     Token lexDefiniton();
 
     void tokenizeAction();
