@@ -58,11 +58,18 @@ Token Tokenizer::lexCharClass() {
     std::string val;
 
     advance();
+
     if (peek() == '^')
         val += advance();
-    if (peek() == ']')
-        val += advance();
-    while(!isAtEnd() && peek() != ']') {
+
+    while(!isAtEnd()) {
+        if (peek() == ']') {
+            if (val.length() > 0 && val.back() == ':') {
+                val += advance();
+                continue;
+            }
+            break;
+        }
         if (peek() == '\\') {
             val += advance();
             val += advance();
@@ -145,7 +152,7 @@ Token Tokenizer::lexBrace() {
     }
     if (isRepeat)
         return Token(TOK_REPEAT, value, startLine, startCol);
-    return Token(TOK_DEFINITION, value, startLine, startCol);
+    return Token(TOK_DEFINITION_REFERENCE, value, startLine, startCol);
 }
 
 Token Tokenizer::lexDefiniton() {
@@ -199,7 +206,9 @@ void Tokenizer::tokenizeAction() {
     skipWhitespace();
 
     if (isAtEnd() || peek() == '\n') {
-        advance();
+        tokens.push_back(Token(TOK_C_CODE, "", _line, _column));
+        if (peek() == '\n')
+            advance();
         tokens.push_back(Token(TOK_NEWLINE, "\n", _line, _column));
         return;
     }
@@ -348,6 +357,7 @@ const char* tokenTypeToString(TokenType type) {
         case TOK_C_CODE: return "TOK_C_CODE";
         case TOK_REPEAT: return "TOK_REPEAT";
         case TOK_DEFINITION: return "TOK_DEFINITION";
+        case TOK_DEFINITION_REFERENCE: return "TOK_DEFINITION_REFERENCE";
         case TOK_NEWLINE: return "TOK_NEWLINE";
         case TOK_WHITESPACE: return "TOK_WHITESPACE";
         case TOK_EOF: return "TOK_EOF";
