@@ -1,6 +1,7 @@
 #ifndef TOKENIZER_HPP
 # define TOKENIZER_HPP
 
+# include <iostream>
 # include <vector>
 # include <string>
 # include <stdexcept>
@@ -64,6 +65,7 @@ class Tokenizer {
 
     void skipNewlines();
     void skipWhitespace();
+    void skipComment();
 
     Token lexString();
     Token lexCharClass();
@@ -83,5 +85,7 @@ class Tokenizer {
     std::vector<Token> tokenize();
 };
 
+std::ostream& operator<<(std::ostream& os, const Token& token);
+std::ostream& operator<<(std::ostream& os, const std::vector<Token>& tokens);
 
 #endif

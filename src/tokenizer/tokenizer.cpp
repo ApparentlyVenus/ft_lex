@@ -4,7 +4,7 @@ Token::Token(TokenType t, const std::string& v, int line, int col)
     :   type(t), value(v), line(line), column(col) {}
 
 Tokenizer::Tokenizer(const std::string& input) 
-    : _input(input), _pos(0), _line(1), _column(1) {}
+    : _input(input), _pos(0), _line(1), _column(1), tokens() {}
 
 char Tokenizer::peek() {
     if (isAtEnd()) return '\0';
@@ -85,16 +85,15 @@ Token Tokenizer::lexCCode() {
     int braceDepth = 0;
 
     if (peek() == '{') {
-        advance();
-        braceDepth++;
+        val += advance();
+        braceDepth = 1;
         while (!isAtEnd() && braceDepth > 0) {
             char c = advance();
+            val += c;
             if (c == '{')
                 braceDepth++;
             else if (c == '}')
                 braceDepth--;
-            else
-                val += c;
         }
     } else {
         while (!isAtEnd() && peek() != '\n')
@@ -134,9 +133,12 @@ Token Tokenizer::lexBrace() {
     }
     advance();
 
+    if (value.empty())
+        throw std::runtime_error("empty brace at line " + std::to_string(_line));
+
     bool isRepeat = true;
-    for (int i = 0; i < value.length(); i++) {
-        if (!std::isdigit(value[0]) && value[0] != ',') {
+    for (size_t i = 0; i < value.length(); i++) {
+        if (!std::isdigit(value[i]) && value[i] != ',') {
             isRepeat = false;
             break;
         }
@@ -179,12 +181,36 @@ void Tokenizer::skipWhitespace() {
     }
 }
 
+void Tokenizer::skipComment() {
+    if (peek() == '/' && peekNext() == '*') {
+        advance(); advance();
+        while (!isAtEnd()) {
+            if (peek() == '*' && peekNext() == '/') {
+                advance(); advance();
+                return;
+            }
+            advance();
+        }
+        throw std::runtime_error("unterminated comment at line " + std::to_string(_line));
+    }
+}
+
 void Tokenizer::tokenizeAction() {
     skipWhitespace();
 
     if (isAtEnd() || peek() == '\n') {
         advance();
         tokens.push_back(Token(TOK_NEWLINE, "\n", _line, _column));
+        return;
+    }
+
+    if (peek() == '|') {
+        advance();
+        tokens.push_back(Token(TOK_PIPE, "|", _line, _column));
+        if (peek() == '\n') {
+            advance();
+            tokens.push_back(Token(TOK_NEWLINE, "\n", _line, _column));
+        }
         return;
     }
     tokens.push_back(lexCCode());
@@ -241,6 +267,12 @@ void Tokenizer::tokenizeRules() {
 
 void Tokenizer::tokenizeHeader() {
     while (!isAtEnd()) {
+        skipNewlines();
+
+        if (peek() == '/' && peekNext() == '*') {
+            skipComment();
+            continue;
+        }
         if (peek() == '%' && peekNext() == '%') {
             advance();
             advance();
@@ -266,6 +298,8 @@ void Tokenizer::tokenizeHeader() {
             continue; 
         }
         tokens.push_back(lexDefiniton());
+        if (peek() == '\n')
+            advance();
     }
     throw std::runtime_error("unexcpected EOF: missing %%");
 }
@@ -287,4 +321,17 @@ std::vector<Token> Tokenizer::tokenize() {
     tokenizeCode();
     tokens.push_back(Token(TOK_EOF, "", _line, _column));
     return tokens;
+}
+
+std::ostream& operator<<(std::ostream& os, const Token& token) {
+    os << "Token " << token.type << "at " << token.line << ":" << token.column << "val = " << token.value;
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::vector<Token>& tokens) {
+    for (size_t i = 0; i < tokens.size(); i++) {
+        os << tokens[i];
+        if (i < tokens.size() - 1) os << "\n";
+    }
+    return os;
 }
