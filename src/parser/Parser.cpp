@@ -145,5 +145,4 @@ primary     → LITERAL | STRING | CHARCLASS | '(' pattern ')' | '{' NAME '}'
 std::vector<Rule> Parser::parse() {
     parseHeader();
     expandDefinitions();
-    parse
 }
