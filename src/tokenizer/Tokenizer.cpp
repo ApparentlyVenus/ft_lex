@@ -40,8 +40,20 @@ Token Tokenizer::lexString() {
     advance();
     while (!isAtEnd() && peek() != '"') {
         if (peek() == '\\') {
-            val += advance();
-            val += advance();
+            advance();
+            char escaped = advance();
+            switch(escaped) {
+                case 'n': val += '\n'; break;
+                case 't': val += '\t'; break;
+                case 'r': val += '\r'; break;
+                case '\\': val += '\\'; break;
+                case '"': val += '"'; break;
+                case '0': val += '\0'; break;
+                default: 
+                    val += '\\';
+                    val += escaped;
+                    break;
+            }
         } else {
             val += advance();
         }
