@@ -1,5 +1,7 @@
 #include "../../inc/parser/RegexNode.hpp"
 
+NFAState::NFAState(int id) : id(id), accepting(false), ruleNumber(-1) {}
+
 UnaryNode::UnaryNode(RegexNode *c) : child(c) {}
 
 UnaryNode::~UnaryNode() {

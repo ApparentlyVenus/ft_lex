@@ -2,10 +2,28 @@
 # define REGEX_NODE_HPP
 
 # include <string>
+# include <map>
+# include <set>
+
+struct NFAState {
+    int id;
+    std::map<char, std::set<NFAState*>> transitions;
+    std::set<NFAState*> epsilonTransitions;
+    bool accepting;
+    int ruleNumber;
+
+    NFAState(int id);
+};
+
+struct NFAFragment {
+    NFAState *start;
+    NFAState *end;
+};
 
 class RegexNode {
     public:
     virtual ~RegexNode() = default;
+    virtual NFAFragment toNFA(int& stateCounter) = 0;
 };
 
 class LiteralNode : public RegexNode {
