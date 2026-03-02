@@ -32,25 +32,57 @@ void Parser::parseHeader() {
         }
 
         if (peek().type == TOK_DEFINITION) {
-            std::string def = advance().value;
-            size_t space = def.find(' ');
-            std::string name = def.substr(0, space);
-            std::string pattern = def.substr(space + 1);
-            _definitions[name] = pattern;
+            Token defToken = advance();
+            size_t space = defToken.value.find(' ');
+            std::string name = defToken.value.substr(0, space);
+            std::string pattern = defToken.value.substr(space + 1);
+            _definitions[name] = expandDefinitions(pattern, defToken);
         }
     }
 }
 
-void Parser::expandDefinitions() {
+std::string Parser::expandDefinitions(const std::string& pattern, const Token& defToken) {
+    std::string result;
+    size_t i = 0;
+
+    while (i < pattern.size()) {
+        if (pattern[i] == '{') {
+            size_t end = pattern.find('}', i);
+            if (end == std::string::npos)
+                throw std::runtime_error("unterminated { at " + 
+                    std::to_string(defToken.line) + ":" + std::to_string(defToken.column));
+            std::string name = pattern.substr(i + 1, end - i - 1);
+            if (_definitions.find(name) == _definitions.end())
+                throw std::runtime_error("undefined: " + name + " at " + 
+                    std::to_string(defToken.line) + ":" + std::to_string(defToken.column));
+            result += expandDefinitions(_definitions[name], defToken);
+            i = end + 1;
+        } else {
+            result += pattern[i];
+            i++;
+        }
+    }
+    return result;
+}
+
+void Parser::expandReferences() {
     for (size_t i = 0; i < _tokens.size(); i++) {
         if (_tokens[i].type == TOK_DEFINITION_REFERENCE) {
-            if (_definitions.find(_tokens[i].value) == _definitions.end())
-                throw std::runtime_error("undefined expression at " + std::to_string(_tokens[i].line) + ":" + std::to_string(_tokens[i].column));
-            std::string pattern = _definitions[_tokens[i].value];
-            Tokenizer defTokenizer(pattern);
-            std::vector<Token> expanded = defTokenizer.tokenize();
+            std::string name = _tokens[i].value;
+            if (_definitions.find(name) == _definitions.end())
+                throw std::runtime_error("undefined reference: " + name + " at " + 
+                    std::to_string(_tokens[i].line) + ":" + std::to_string(_tokens[i].column));
+            
+            std::string pattern = _definitions[name];
+            Tokenizer t(pattern);
+            std::vector<Token> expanded = t.tokenizePatternExtern();
+            
+            if (!expanded.empty() && expanded.back().type == TOK_EOF)
+                expanded.pop_back();
+            
             _tokens.erase(_tokens.begin() + i);
             _tokens.insert(_tokens.begin() + i, expanded.begin(), expanded.end());
+            i += expanded.size() - 1;
         }
     }
 }
@@ -61,7 +93,9 @@ RegexNode *Parser::parsePattern() {
 
 RegexNode *Parser::parseAlt() {
     RegexNode *left = parseConcat();
-    while (peek().type == TOK_PIPE) {
+    while (!isAtEnd() && peek().type == TOK_PIPE) {
+        if (_pos + 1 < _tokens.size() && _tokens[_pos + 1].type == TOK_NEWLINE)
+            return left;
         advance();
         RegexNode *right = parseConcat();
         left = new AltNode(left, right);
@@ -74,7 +108,8 @@ RegexNode *Parser::parseConcat() {
     TokenType type = peek().type;
     while (type == TOK_LITERAL || type == TOK_LBRACE 
         || type == TOK_LBRACKET || type == TOK_LPAREN
-        || type == TOK_DEFINITION_REFERENCE) {
+        || type == TOK_DEFINITION_REFERENCE || type == TOK_DOT 
+        || type == TOK_STRING || type == TOK_CHARCLASS) {
         RegexNode *right = parsePostfix();
         left = new ConcatNode(left, right);
         type = peek().type;
@@ -105,15 +140,25 @@ RegexNode *Parser::parsePrimary() {
     Token token = advance();
 
     switch (token.type) {
-        case (TOK_LITERAL):
+        case (TOK_LITERAL): {
+            if (token.value.empty())
+                throw std::runtime_error("empty literal at " + 
+                    std::to_string(token.line) + ":" + std::to_string(token.column));
             return new LiteralNode(token.value[0]);
+        }
         case (TOK_STRING): {
+            if (token.value.empty())
+                throw std::runtime_error("empty string at " + 
+                    std::to_string(token.line) + ":" + std::to_string(token.column));
             RegexNode *result = new LiteralNode(token.value[0]);
             for (size_t i = 1; i < token.value.length(); i++)
                 result = new ConcatNode(result, new LiteralNode(token.value[i]));
             return result;
         }
         case (TOK_CHARCLASS): {
+            if (token.value.empty())
+                throw std::runtime_error("empty charclass at " + 
+                    std::to_string(token.line) + ":" + std::to_string(token.column));
             bool negated = (token.value[0] == '^');
             std::string pattern;
             if (negated)
@@ -129,6 +174,9 @@ RegexNode *Parser::parsePrimary() {
             advance();
             return paren;
         }
+        case (TOK_DOT):
+            return new DotNode();
+        
         default:
             throw std::runtime_error("unexpected token at " + std::to_string(token.line) + ":" + std::to_string(token.column));
     }            
@@ -142,7 +190,59 @@ postfix     → primary ('*' | '+' | '?')?
 primary     → LITERAL | STRING | CHARCLASS | '(' pattern ')' | '{' NAME '}'
 */
 
+std::vector<Rule> Parser::parseRules() {
+    std::vector<Rule> rules;
+    int priority = 0;
+
+    while (!isAtEnd()) {
+        while (peek().type == TOK_NEWLINE)
+            advance();
+        if (isAtEnd())
+            break ;
+
+        if (peek().type == TOK_PERCENT_PERCENT) {
+            advance();
+            break ;
+        }
+
+        RegexNode *pattern = parsePattern();
+        
+        if (peek().type == TOK_PIPE) {
+            std::string action = advance().value;  // "|"
+            rules.push_back(Rule(pattern, action, priority++));
+        } else if (peek().type == TOK_C_CODE) {
+            std::string action = advance().value;
+            rules.push_back(Rule(pattern, action, priority++));
+        } else {
+            throw std::runtime_error("expected action at " + 
+                std::to_string(peek().line) + ":" + std::to_string(peek().column));
+        }            
+        if (peek().type == TOK_NEWLINE)
+            advance();
+    }
+    return rules;
+}
+
+void Parser::resolveActions(std::vector<Rule>& rules) {
+    for (size_t i = 0; i < rules.size(); i++) {
+        if (rules[i].action == "|") {
+            size_t j = i + 1;
+            while (j < rules.size() && rules[j].action == "|")
+                j++;
+            if (j >= rules.size())
+                throw  std::runtime_error("pipe continuation with no action");
+            std::string action = rules[j].action;
+            for (size_t k = i; k < j; k++) {
+                rules[k].action = action;
+            }
+        }
+    }
+}
+
 std::vector<Rule> Parser::parse() {
     parseHeader();
-    expandDefinitions();
+    expandReferences();
+    std::vector<Rule> rules = parseRules();
+    resolveActions(rules);
+    return rules;
 }

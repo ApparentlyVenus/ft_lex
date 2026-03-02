@@ -25,13 +25,17 @@ class Parser {
     bool isAtEnd() const;
 
     void parseHeader();
-    void expandDefinitions();
+    void expandReferences();
+    std::string expandDefinitions(const std::string& pattern, const Token& token);
 
     RegexNode *parsePattern();
     RegexNode *parseAlt();
     RegexNode *parseConcat();
     RegexNode *parsePostfix();
     RegexNode *parsePrimary();
+
+    std::vector<Rule> parseRules();
+    void resolveActions(std::vector<Rule>& rules);
 
     public:
     Parser(const std::vector<Token>& tokens);
