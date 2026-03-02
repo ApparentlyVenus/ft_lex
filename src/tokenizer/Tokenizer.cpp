@@ -6,12 +6,12 @@ Token::Token(TokenType t, const std::string& v, int line, int col)
 Tokenizer::Tokenizer(const std::string& input) 
     : _input(input), _pos(0), _line(1), _column(1), tokens() {}
 
-char Tokenizer::peek() {
+char Tokenizer::peek() const {
     if (isAtEnd()) return '\0';
     return _input[_pos];
 }
 
-char Tokenizer::peekNext() {
+char Tokenizer::peekNext() const {
     if (_pos + 1 >= _input.size()) return '\0';
     return _input[_pos + 1];
 }
@@ -28,7 +28,7 @@ char Tokenizer::advance() {
     return c;
 }
 
-bool Tokenizer::isAtEnd() {
+bool Tokenizer::isAtEnd() const {
     return _pos >= _input.size();
 }
 
@@ -332,7 +332,7 @@ std::vector<Token> Tokenizer::tokenize() {
     return tokens;
 }
 
-const char* tokenTypeToString(TokenType type) {
+const char* Tokenizer::tokenTypeToString(TokenType type){
     switch(type) {
         case TOK_PERCENT_PERCENT: return "TOK_PERCENT_PERCENT";
         case TOK_PERCENT_LBRACE: return "TOK_PERCENT_LBRACE";
@@ -368,7 +368,7 @@ const char* tokenTypeToString(TokenType type) {
 
 
 std::ostream& operator<<(std::ostream& os, const Token& token) {
-    os << "Token " << tokenTypeToString(token.type) << " at " << token.line << ":" << token.column << " val = " << token.value;
+    os << "Token " << Tokenizer::tokenTypeToString(token.type) << " at " << token.line << ":" << token.column << " val = " << token.value;
     return os;
 }
 

@@ -59,10 +59,10 @@ class Tokenizer {
 
     std::vector<Token> tokens;
 
-    char peek();
-    char peekNext();
+    char peek() const;
+    char peekNext() const;
     char advance();
-    bool isAtEnd();
+    bool isAtEnd() const;
 
     void skipNewlines();
     void skipWhitespace();
@@ -80,9 +80,12 @@ class Tokenizer {
     void tokenizeRules();
     void tokenizeHeader();
     void tokenizeCode();
-
+    
     public:
     Tokenizer(const std::string& input);
+
+    static const char* tokenTypeToString(TokenType type);
+    
     std::vector<Token> tokenize();
 };
 
