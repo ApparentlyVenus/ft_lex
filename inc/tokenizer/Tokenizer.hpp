@@ -85,7 +85,7 @@ class Tokenizer {
     Tokenizer(const std::string& input);
 
     static const char* tokenTypeToString(TokenType type);
-    
+
     std::vector<Token> tokenize();
 };
 
