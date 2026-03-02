@@ -332,6 +332,11 @@ std::vector<Token> Tokenizer::tokenize() {
     return tokens;
 }
 
+std::vector<Token> Tokenizer::tokenizePatternExtern() {
+    tokenizePattern();
+    return tokens;
+}
+
 const char* Tokenizer::tokenTypeToString(TokenType type){
     switch(type) {
         case TOK_PERCENT_PERCENT: return "TOK_PERCENT_PERCENT";

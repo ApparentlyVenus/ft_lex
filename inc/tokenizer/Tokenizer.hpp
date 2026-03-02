@@ -85,6 +85,7 @@ class Tokenizer {
     Tokenizer(const std::string& input);
 
     static const char* tokenTypeToString(TokenType type);
+    std::vector<Token> tokenizePatternExtern(); // this is public to be used in definition expansion in the parser
 
     std::vector<Token> tokenize();
 };
