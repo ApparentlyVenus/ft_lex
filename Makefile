@@ -5,7 +5,7 @@ CXXFLAGS = -Wall -Wextra -Werror
 SRC = src/main.cpp \
       src/tokenizer/Tokenizer.cpp \
 	  src/parser/Parser.cpp \
-	  src/parser/RegexNode.cpp \
+	  src/regex/RegexNode.cpp \
       src/utils/Logger.cpp \
       src/utils/FileUtils.cpp \
       src/utils/StringUtils.cpp
