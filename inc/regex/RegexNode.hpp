@@ -18,6 +18,8 @@ struct NFAState {
 struct NFAFragment {
     NFAState *start;
     NFAState *end;
+
+    NFAFragment(NFAState *start, NFAState *end);
 };
 
 class RegexNode {

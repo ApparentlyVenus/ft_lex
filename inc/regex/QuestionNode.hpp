@@ -6,6 +6,7 @@
 class QuestionNode : public UnaryNode {
     public:
     QuestionNode(RegexNode* c);
+    NFAFragment toNFA(int& stateCounter) override;
 };
 
 #endif

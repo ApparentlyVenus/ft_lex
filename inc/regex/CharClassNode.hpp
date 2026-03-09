@@ -10,8 +10,11 @@ class CharClassNode : public RegexNode {
 
     public:
     CharClassNode(const std::string& pattern, bool negated);
+    NFAFragment toNFA(int& stateCounter) override;
     const std::string& getPattern() const;
     bool isNegated() const;
+
+    std::set<char> expandCharClass(const std::string& pattern);
 };
 
 #endif

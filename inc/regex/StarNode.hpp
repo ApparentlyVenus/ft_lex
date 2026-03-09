@@ -6,6 +6,7 @@
 class StarNode : public UnaryNode {
     public:
     StarNode(RegexNode* c);
+    NFAFragment toNFA(int& stateCounter) override;
 };
 
 #endif

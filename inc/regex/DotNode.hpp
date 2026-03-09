@@ -3,6 +3,8 @@
 
 # include "RegexNode.hpp"
 
-class DotNode : public RegexNode {};
+class DotNode : public RegexNode {
+    NFAFragment toNFA(int& stateCounter) override;
+};
 
 #endif

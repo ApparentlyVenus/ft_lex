@@ -9,6 +9,7 @@ class LiteralNode : public RegexNode {
 
     public:
     LiteralNode(char c);
+    NFAFragment toNFA(int& stateCounter) override;
     char getChar() const;
 };
 

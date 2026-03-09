@@ -2,6 +2,8 @@
 
 NFAState::NFAState(int id) : id(id), accepting(false), ruleNumber(-1) {}
 
+NFAFragment::NFAFragment(NFAState *start, NFAState *end) : start(start), end(end) {}
+
 UnaryNode::UnaryNode(RegexNode *c) : child(c) {}
 
 UnaryNode::~UnaryNode() {

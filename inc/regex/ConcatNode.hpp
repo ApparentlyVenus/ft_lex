@@ -6,6 +6,7 @@
 class ConcatNode : public BinaryNode {
     public:
     ConcatNode(RegexNode* l, RegexNode* r);
+    NFAFragment toNFA(int& stateCounter) override;
 };
 
 #endif
