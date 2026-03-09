@@ -1,10 +1,10 @@
 #ifndef NFA_HPP
 # define NFA_HPP
 
+# include "../parser/Parser.hpp"
 # include "../regex/RegexNode.hpp"
 # include <vector>
 # include <queue>
-# include "../parser/Parser.hpp"
 
 class NFA {
     private:
