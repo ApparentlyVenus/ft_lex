@@ -1,6 +1,6 @@
-# ft_lex
+# ft_lex (IN PROGRESS)
 
-POSIX lex implementation in C++.
+POSIX lex implementation in C++. 
 
 Generates lexical analyzers from `.l` files.
 
