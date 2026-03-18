@@ -12,6 +12,40 @@ DFAState::DFAState(int id, const std::set<NFAState*>& nfaStates)
     }
 }
 
+std::set<NFAState*> DFA::epsilonClosure(NFAState* start) {
+    std::set<NFAState*> result;
+    std::queue<NFAState*> worklist;
+
+    for (NFAState* state : start->epsilonTransitions) {
+        result.insert(state);
+        worklist.push(state);
+    }
+
+    for (!worklist.empty()) {
+        NFAState* current = worklist.front();
+        worklist.pop();
+
+        for (NFAState *next : current->epsilonTransitions) {
+            if (result.find(next) == result.end()) {
+                result.insert(next);
+                worklist.push(next);
+            }
+        }
+    }   
+
+    return result;
+}
+
 DFA DFA::fromNFA(const NFA& nfa) {
+    std::set<DFAState*> dfaStates;
+    std::queue<DFAState*> worklist;
+    std::map<std::set<NFAState*>, DFAState*> stateMap;
+    int id = 0;
     
+    NFAState* startNFA = nfa.getStart();
+    std::set<NFAState*>  startSet = epsilonClosure(startNFA);
+    DFAState startState = new DFAState(id++, startSet);
+    worklist.push(startState&);
+    stateMap[startSet] = stateMap;
+
 }

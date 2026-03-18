@@ -3,6 +3,7 @@
 
 # include <map>
 # include <set>
+# include <queue>
 # include "../nfa/NFA.hpp"
 
 struct DFAState {
@@ -25,7 +26,7 @@ class DFA {
     public:
     
     static DFA fromNFA(const NFA& nfa);
-    static std::set<NFAState*> epsilonClosure(NFAState *start);
+    static std::set<NFAState*> epsilonClosure(NFAState* start);
 };
 
 #endif
