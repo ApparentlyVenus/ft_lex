@@ -12,16 +12,32 @@ DFAState::DFAState(int id, const std::set<NFAState*>& nfaStates)
     }
 }
 
-std::set<NFAState*> DFA::epsilonClosure(NFAState* start) {
+DFA::DFA(DFAState* start, const std::set<DFAState*>& states)
+    : start(start), states(states) {}
+
+DFA::~DFA() {
+    for (DFAState* state : states)
+        delete state;
+}
+
+DFAState *DFA::getStart() const {
+    return start;
+}
+
+std::set<DFAState*> DFA::getStates() const {
+    return states;
+}
+
+std::set<NFAState*> DFA::epsilonClosure(const std::set<NFAState*>& states) {
     std::set<NFAState*> result;
     std::queue<NFAState*> worklist;
 
-    for (NFAState* state : start->epsilonTransitions) {
+    for (NFAState* state : states) {
         result.insert(state);
         worklist.push(state);
     }
 
-    for (!worklist.empty()) {
+    while (!worklist.empty()) {
         NFAState* current = worklist.front();
         worklist.pop();
 
@@ -41,11 +57,41 @@ DFA DFA::fromNFA(const NFA& nfa) {
     std::queue<DFAState*> worklist;
     std::map<std::set<NFAState*>, DFAState*> stateMap;
     int id = 0;
-    
-    NFAState* startNFA = nfa.getStart();
-    std::set<NFAState*>  startSet = epsilonClosure(startNFA);
-    DFAState startState = new DFAState(id++, startSet);
-    worklist.push(startState&);
-    stateMap[startSet] = stateMap;
 
+    std::set<NFAState*> startStates = epsilonClosure({nfa.getStart()}); 
+    DFAState *start = new DFAState(id++, startStates);
+    worklist.push(start);
+    dfaStates.insert(start);
+    stateMap[startStates] = start;
+
+    while (!worklist.empty()) {
+        DFAState *current = worklist.front();
+        worklist.pop();
+
+        for (int c = 0; c < 256; c++) {
+            std::set<NFAState *> reachable;
+            for (NFAState * nfaState : current->nfaStates) {
+                auto it = nfaState->transitions.find((char)c);
+                if (it != nfaState->transitions.end())
+                    reachable.insert(it->second.begin(), it->second.end());
+            }
+
+            if (reachable.empty())
+                continue ;
+
+            std::set<NFAState *> closure = epsilonClosure(reachable);
+            DFAState *next;
+
+            if (stateMap.find(closure) == stateMap.end()) {
+                next = new DFAState(id++, closure);
+                stateMap[closure] = next;
+                dfaStates.insert(next);
+                worklist.push(next);
+            } else {
+                next = stateMap[closure];
+            }
+            current->transitions[(char)c] = next;
+        }
+    }
+    return DFA(start, dfaStates);
 }

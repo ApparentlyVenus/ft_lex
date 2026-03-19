@@ -25,8 +25,14 @@ class DFA {
 
     public:
     
+    DFA(DFAState* start, const std::set<DFAState*>& states);
+    ~DFA();
+
+    DFAState *getStart() const;
+    std::set<DFAState*> getStates() const;
+    
     static DFA fromNFA(const NFA& nfa);
-    static std::set<NFAState*> epsilonClosure(NFAState* start);
+    static std::set<NFAState*> epsilonClosure(const std::set<NFAState*>& states);
 };
 
 #endif
